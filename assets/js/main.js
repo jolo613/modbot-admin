@@ -1,5 +1,10 @@
 const API_URI = "http://localhost:8080/";
+const WS_URI = "ws://localhost:8081/";
 const DISCORD_AVATAR_URI = "https://cdn.discordapp.com/";
+
+function comma(x) {
+    return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
 
 const listeners = {
     profileImageChange: [
@@ -11,8 +16,11 @@ const listeners = {
     twitchAccountsChange: [
         function(accounts) {
 
-            console.log(accounts);
             let table = `<table>`;
+
+            if (accounts.length === 0) {
+                table += "<tr><th style=\"text-align: center;\">No data.</th></tr>";
+            }
 
             accounts.forEach(account => {
                 table += `
@@ -20,7 +28,7 @@ const listeners = {
                     <td><img class="rounded-square-avatar" src="${account.profile_image_url}" alt="Profile picture for Twitch user '${account.display_name}'"></td>
                     <td>
                         <span class="account-name">${account.display_name}${account.affiliation === "partner" ? '&nbsp;<i class=\"fas fa-badge-check\"></i></span>' : ''}</span>
-                        <span class="account-stats">${account.follower_count !== null ? `<span class="highlight">${account.follower_count}</span> followers • ` : ''}${account.view_count !== null ? `<span class="highlight">${account.view_count}</span> profile views • ` : ''}User ID <span class="highlight">${account.id}</span>${account.affiliation === null ? '' : (account.affiliation === "partner" ? " • <span class=\"highlight\">Partner <i class=\"far fa-badge-check\"></i></span>" : " • <span class=\"highlight\">Affiliate</span>")}</span>
+                        <span class="account-stats">${account.follower_count !== null ? `<span class="highlight">${comma(account.follower_count)}</span> follower${account.follower_count === 1 ? '' : 's'} • ` : ''}${account.view_count !== null ? `<span class="highlight">${comma(account.view_count)}</span> views • ` : ''}User ID <span class="highlight">${account.id}</span>${account.affiliation === null ? '' : (account.affiliation === "partner" ? " • <span class=\"highlight\">Partner <i class=\"far fa-badge-check\"></i></span>" : " • <span class=\"highlight\">Affiliate</span>")}</span>
                     </td>
                 </tr>`;
             });
@@ -33,8 +41,11 @@ const listeners = {
     discordAccountsChange: [
         function(accounts) {
 
-            console.log(accounts);
             let table = `<table>`;
+
+            if (accounts.length === 0) {
+                table += "<tr><th style=\"text-align: center;\">No data.</th></tr>";
+            }
 
             accounts.forEach(account => {
                 let pfp = null;
@@ -59,7 +70,108 @@ const listeners = {
             // update linked accounts list
             $(".discord-accounts").html(table);
         }
-    ]
+    ],
+    streamersChange: [
+        function(streamers) {
+            let identities = `<table>`;
+            let twitch = `<table>`;
+            let discord = `<table>`;
+
+            if (streamers.length === 0) {
+                identities += "<tr><th style=\"text-align: center;\">No data.</th></tr>";
+            }
+
+            streamers.forEach(streamer => {
+                identities += `
+                <tr class="account-row">
+                    <td><img class="rounded-square-avatar" src="${streamer.avatar_url}" alt="Profile picture for Identity '${streamer.name}'"></td>
+                    <td>
+                        <span class="account-name">${streamer.name}</span>
+                        <span class="account-stats"><span class="highlight">${streamer.profiles.twitch.length}</span> twitch account${streamer.profiles.twitch.length === 1 ? "" : "s"} • <span class="highlight">${streamer.profiles.discord.length}</span> discord account${streamer.profiles.discord.length === 1 ? "" : "s"} • Identity ID <span class="highlight">${streamer.id}</span></span>
+                    </td>
+                </tr>`;
+
+
+                streamer.profiles.twitch.forEach(account => {
+                    twitch += `
+                    <tr class="account-row">
+                        <td><img class="rounded-square-avatar" src="${account.profile_image_url}" alt="Profile picture for Twitch user '${account.display_name}'"></td>
+                        <td>
+                            <span class="account-name">${account.display_name}${account.affiliation === "partner" ? '&nbsp;<i class=\"fas fa-badge-check\"></i></span>' : ''}</span>
+                            <span class="account-stats">${account.follower_count !== null ? `<span class="highlight">${comma(account.follower_count)}</span> follower${account.follower_count === 1 ? '' : 's'} • ` : ''}${account.view_count !== null ? `<span class="highlight">${comma(account.view_count)}</span> views • ` : ''}User ID <span class="highlight">${account.id}</span>${account.affiliation === null ? '' : (account.affiliation === "partner" ? " • <span class=\"highlight\">Partner <i class=\"far fa-badge-check\"></i></span>" : " • <span class=\"highlight\">Affiliate</span>")}</span>
+                        </td>
+                    </tr>`;
+                });
+
+                streamer.profiles.discord.forEach(account => {
+                    let pfp = null;
+    
+                    if (account.avatar !== null) {
+                        pfp = DISCORD_AVATAR_URI + "avatars/" + account.id + "/" + account.avatar + ".png";
+                    } else {
+                        pfp = DISCORD_AVATAR_URI + "embed/avatars/" + account.discriminator + ".png";
+                    }
+    
+                    discord += `
+                    <tr class="account-row">
+                        <td><img class="rounded-square-avatar" src="${pfp}" alt="Profile picture for Discord user '${account.name}'"></td>
+                        <td>
+                            <span class="account-name">${account.name}</span>
+                            <span class="account-stats">Tag <span class="highlight">${account.name + "#" + account.discriminator}</span> • User ID <span class="highlight">${account.id}</span></span>
+                        </td>
+                    </tr>`;
+                });
+            });
+
+            if (twitch === "<table>") {
+                twitch += "<tr><th style=\"text-align: center;\">No data.</th></tr>";
+            }
+
+            if (discord === "<table>") {
+                discord += "<tr><th style=\"text-align: center;\">No data.</th></tr>";
+            }
+
+            identities += '</table>';
+            twitch += '</table>';
+            discord += '</table>';
+
+            $(".authorized-identities").html(identities);
+            $(".authorized-twitch").html(twitch);
+            $(".authorized-discord").html(discord);
+        }
+    ],
+    statusChange: [
+        function(status) {
+            let moduleCode = `<div class="container-fluid"><div class="row">`;
+            status.forEach((node, i) => {
+                console.log(i);
+                if (i % 2 === 0 && i !== 0) {
+                    moduleCode += `</div><div class="row">`;
+                }
+
+                moduleCode += `<div class="col col-md-6"><section>
+                <h3>
+                    TMI Node #${node.id}
+                    <small>All channels being listened to by node #${node.id}.</small>
+                </h3>
+    
+                <div class="channel-status"><table>`;
+                node.channels.forEach(account => {
+                    moduleCode += `
+                    <tr class="account-row">
+                        <td><img class="rounded-square-avatar" src="${account.profile_image_url}" alt="Profile picture for Twitch user '${account.display_name}'"></td>
+                        <td>
+                            <span class="account-name">${account.display_name}${account.affiliation === "partner" ? '&nbsp;<i class=\"fas fa-badge-check\"></i></span>' : ''}</span>
+                            <span class="account-stats">${account.follower_count !== null ? `<span class="highlight">${comma(account.follower_count)}</span> follower${account.follower_count === 1 ? '' : 's'} • ` : ''}${account.view_count !== null ? `<span class="highlight">${comma(account.view_count)}</span> views • ` : ''}User ID <span class="highlight">${account.id}</span>${account.affiliation === null ? '' : (account.affiliation === "partner" ? " • <span class=\"highlight\">Partner <i class=\"far fa-badge-check\"></i></span>" : " • <span class=\"highlight\">Affiliate</span>")}</span>
+                        </td>
+                    </tr>`;
+                });
+                moduleCode += `</table></div></section></div>`;
+            });
+            moduleCode += "</div></div>";
+            $(".bot-status").html(moduleCode);
+        }
+    ],
 }
 
 function emit(event, params) {
@@ -112,17 +224,25 @@ const api = {
     }
 }
 
+const navigate = function(page, url) {
+    $(".sidebar-nav a").removeClass("active");
+    $(`.${page}-link`).addClass("active");
+
+    $("h2").html($(`.${page}-link`).text());
+
+    $("article").hide();
+    $(`.${page}`).show();
+
+    history.pushState(page, "TMS Admin Panel", url);
+}
+
 $(document).ready(function() {
     api.get("identity", function(data) {
         if (data.success) {
             emit("twitchAccountsChange", [data.data.profiles.twitch]);
             emit("discordAccountsChange", [data.data.profiles.discord]);
             if (data.data.profiles.discord.length > 0) {
-                if (data.data.profiles.discord[0].avatar !== null) {
-                    emit("profileImageChange", DISCORD_AVATAR_URI + "avatars/" + data.data.profiles.discord[0].id + "/" + data.data.profiles.discord[0].avatar + ".png");
-                } else {
-                    emit("profileImageChange", DISCORD_AVATAR_URI + "embed/avatars/" + data.data.profiles.discord[0].discriminator + ".png");
-                }
+                emit("profileImageChange", data.data.avatar_url);
             } else if (data.data.profiles.twitch.length > 0) {
                 if (data.data.profiles.twitch[0].profile_image_url) {
                     emit("profileImageChange", data.data.profiles.twitch[0].profile_image_url);
@@ -132,4 +252,36 @@ $(document).ready(function() {
             console.error(data.error);
         }
     });
+
+    api.get("streamers", function(data) {
+        if (data.success) {
+            emit("streamersChange",[data.data]);
+        }
+    });
+
+    api.get("status", function(data) {
+        if (data.success) {
+            emit("statusChange",[data.data]);
+        }
+    });
+
+    $(".add-twitch-profile").click(function() {
+        if (confirm('Twitch will not prompt you to change your login account. Go to Twitch and verify this is the account you\'d like to add prior to continuing.\n\nIf your logged in account is the same account that you use to login here, you will just be sent back to this page.')) {
+            window.location = "https://tmsqd.co/twitch";
+        }
+
+        return false;
+    });
+
+    $("a.not-registered").click(function() {
+        let ele = $(this);
+        
+        if (ele.attr("data-slink")) {
+            navigate(ele.attr("data-slink"), ele.attr("href"));
+
+            return false;
+        }
+    });
+
+    $("a.not-registered").removeClass("not-registered");
 });
