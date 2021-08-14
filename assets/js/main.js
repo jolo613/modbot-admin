@@ -226,11 +226,22 @@ const api = {
 
 const navigate = function(page, url) {
     $("body").removeClass("menu-open");
-    
+
     $(".sidebar-nav a").removeClass("active");
     $(`.${page}-link`).addClass("active");
 
-    $("h2 span").html($(`.${page}-link`).text());
+    if ($("h2 span").text() !== $(`.${page}-link`).text()) {
+        let h2 = $("h2");
+        let oldspan = $("h2 span");
+        let newspan = $("<span class=\"new\">" + $(`.${page}-link`).text() + "</span>");
+
+        h2.append(newspan);
+
+        oldspan.addClass("old");
+
+        setTimeout(function(){newspan.removeClass("new");}, 10);
+        setTimeout(function(){oldspan.remove();}, 250);
+    }
 
     $("article").hide();
     $(`.${page}`).show();

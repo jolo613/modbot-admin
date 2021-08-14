@@ -253,6 +253,28 @@ table {
     margin: 0 .7em 0 -.9em;
 }
 
+@media only screen and (min-width: 800px) {
+    h2 span {
+        position: absolute;
+        width: 10em;
+        opacity: 1;
+        top: 50%;
+        transform: translateY(-50%);
+        left: 0;
+        transition: 0.2s;
+    }
+
+    h2 span.new {
+        opacity: 0;
+        left: 1em;
+    }
+
+    h2 span.old {
+        opacity: 0;
+        left: -1em;
+    }
+}
+
 @media only screen and (max-width: 800px) {
     .hamburger-menu {
         display: inline-block;
@@ -277,5 +299,9 @@ table {
 
     .menu-open .sidebar {
         left: 0;
+    }
+
+    h2 span.old {
+        display: none;
     }
 }
