@@ -27,6 +27,7 @@ h1 {
     height: 3rem;
     background-color: #384d61;
     box-shadow: inset 0px -4px 10px 0px rgb(41 58 72 / 80%);
+    cursor: default;
 }
 
 h1 span {
@@ -172,11 +173,7 @@ section {
 }
 
 .row section {
-    margin: 0 .6em;
-}
-
-.row {
-    margin: 1.2em 0;
+    margin: 1.2em .6em 0 .6em;
 }
 
 /* grab whatever header is directly in a section; we're gonna call this the main header. */
@@ -247,4 +244,38 @@ table {
 
 .add:hover {
     color: #6d6d6d;
+}
+
+.hamburger-menu {
+    color: #333;
+    display: none;
+    padding: .3em;
+    margin: 0 .7em 0 -.9em;
+}
+
+@media only screen and (max-width: 800px) {
+    .hamburger-menu {
+        display: inline-block;
+    }
+
+    .sidebar {
+        left: min(-100vw, -18em);
+        transition: 0.2s left;
+    }
+
+    .wrapper {
+        position: absolute;
+        width: 100vw;
+        left: 0;
+        margin: 0;
+        transition: 0.2s left;
+    }
+
+    .menu-open .wrapper {
+        left: min(100vw, 18em);
+    }
+
+    .menu-open .sidebar {
+        left: 0;
+    }
 }

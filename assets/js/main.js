@@ -1,4 +1,4 @@
-const API_URI = "http://localhost:8080/";
+const API_URI = "https://api.tmsqd.co/";
 const WS_URI = "ws://localhost:8081/";
 const DISCORD_AVATAR_URI = "https://cdn.discordapp.com/";
 
@@ -149,7 +149,7 @@ const listeners = {
                     moduleCode += `</div><div class="row">`;
                 }
 
-                moduleCode += `<div class="col col-md-6"><section>
+                moduleCode += `<div class="col col-lg-6"><section>
                 <h3>
                     TMI Node #${node.id}
                     <small>All channels being listened to by node #${node.id}.</small>
@@ -225,10 +225,12 @@ const api = {
 }
 
 const navigate = function(page, url) {
+    $("body").removeClass("menu-open");
+    
     $(".sidebar-nav a").removeClass("active");
     $(`.${page}-link`).addClass("active");
 
-    $("h2").html($(`.${page}-link`).text());
+    $("h2 span").html($(`.${page}-link`).text());
 
     $("article").hide();
     $(`.${page}`).show();
@@ -284,4 +286,6 @@ $(document).ready(function() {
     });
 
     $("a.not-registered").removeClass("not-registered");
+    $("h1").click(function(){$("body").removeClass("menu-open");});
+    $(".hamburger-menu").click(function(){$("body").toggleClass("menu-open");return false;});
 });
