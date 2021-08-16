@@ -1,6 +1,100 @@
 const API_URI = "https://api.tmsqd.co/";
-const WS_URI = "ws://localhost:8081/";
+const WS_URI = "wss://ws.tmsqd.co/";
 const DISCORD_AVATAR_URI = "https://cdn.discordapp.com/";
+
+let ws = null;
+
+let traceList = {};
+
+function sendNotification(title, description, classes = "notification-primary", length = 6000) {
+    if ($(".notifications").length === 0) {
+        $("body").append("<div class=\"notifications\"></div>");
+    }
+
+    let notification = $(`<div class="notification ${classes}" style="display: none;"><div class="header">${title}</div><div>${description}</div></div>`);
+    $(".notifications").append(notification);
+
+    notification.fadeIn(200);
+
+    setTimeout(function() {
+        notification.slideUp(200);
+
+        setTimeout(function() {
+            notification.remove();
+        }, 250)
+    }, length + 200);
+}
+
+let eventListeners = {
+    ["streamer-list-updated"]: function(data) {
+        sendNotification("Your streamer list was updated!", "The list of streamers are fresh from Twitch. <a href=\"#\" onclick=\"navigate('authorized-channels', '/you/authorized-channels.html');return false;\">Click here to check them out!</a>");
+        emit("streamersChange", [data]);
+    }
+};
+
+function initWS() {
+    ws = new WebSocket(WS_URI);
+
+    ws.json = function(object) {
+        ws.send(JSON.stringify(object));
+    }
+
+    ws.request = function(object) {
+        return new Promise((resolve, reject) => {
+            object.trace = makeid(8);
+            ws.json(object);
+
+            traceList[object.trace] = function(data) {
+                resolve(data);
+            }
+
+            setTimeout(function() {
+                delete traceList[object.trace];
+                reject("Request Timeout");
+            }, 10000);
+        });
+    }
+
+    ws.onopen = async function() {
+        console.log(await ws.request({type: "auth", session: readCookie("session")}));
+    }
+
+    ws.onclose = function() {
+        console.log("Websocket Closed. Reconnecting");
+        initWS();
+    }
+
+    ws.onmessage = function(message) {
+        try {
+            let json = JSON.parse(message.data);
+
+            if (json.hasOwnProperty("trace") && traceList.hasOwnProperty(json.trace)) {
+                traceList[json.trace](json);
+                return;
+            }
+
+            if (json.hasOwnProperty("type") && eventListeners.hasOwnProperty(json.type)) {
+                eventListeners[json.type](json.data);
+                return;
+            }
+
+            console.log("Unknown request", json);
+        } catch (err) {
+            console.error(err);
+        }
+    }
+}
+initWS();
+
+function makeid(length) {
+    let result = '';
+    let characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let charactersLength = characters.length;
+    for (let i = 0; i < length; i++ ) {
+        result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    }
+    return result;
+}
 
 function comma(x) {
     return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
@@ -144,7 +238,6 @@ const listeners = {
         function(status) {
             let moduleCode = `<div class="container-fluid"><div class="row">`;
             status.forEach((node, i) => {
-                console.log(i);
                 if (i % 2 === 0 && i !== 0) {
                     moduleCode += `</div><div class="row">`;
                 }
@@ -246,7 +339,7 @@ const navigate = function(page, url) {
     $("article").hide();
     $(`.${page}`).show();
 
-    history.pushState(page, "TMS Admin Panel", url);
+    history.pushState({page: page, url: url}, "TMS Admin Panel", url);
 }
 
 $(document).ready(function() {
@@ -300,3 +393,9 @@ $(document).ready(function() {
     $("h1").click(function(){$("body").removeClass("menu-open");});
     $(".hamburger-menu").click(function(){$("body").toggleClass("menu-open");return false;});
 });
+
+window.onpopstate = function(event) {
+    if (event.state && event.state.page && event.state.url) {
+        navigate(event.state.page, event.state.url);
+    }
+};
