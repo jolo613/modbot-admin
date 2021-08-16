@@ -263,11 +263,11 @@ table {
 }
 
 .notification {
+    background-color: #fff;
     position: relative;
     padding: .75rem 1.25rem;
     margin-bottom: 1rem;
-    border: 1px solid transparent;
-    border-radius: .25rem;
+    border-left: 6px solid transparent;
     box-shadow: 2px 2px 10px rgba(0,0,0,0.2);
 }
 
@@ -277,19 +277,22 @@ table {
     position: relative;
     top: 0;
     left: 0;
-    margin: .2em 0 .4em 0;
+    margin: 0 0 .4em 0;
 }
 
 .notification-primary {
-    color: #004085;
-    background-color: #cce5ff;
-    border-color: #b8daff;
+    color: #203242;
+    border-color: #2d3e4e;
 }
 
 .notification-secondary {
-    background-color: #e2e3e5;
-    color: #383d41;
-    border-color: #d6d8db;
+    color: #203242;
+    border-color: #94add3;
+}
+
+.notification-error {
+    color: #5c1616;
+    border-color: #b43939;
 }
 
 .notification a {
@@ -298,7 +301,7 @@ table {
     text-decoration: none;
 }
 
-.notification a {
+.notification a:hover {
     text-decoration: underline;
 }
 
