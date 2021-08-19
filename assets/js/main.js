@@ -16,17 +16,17 @@ function sendNotification(title, description, classes = "notification-primary", 
 
     notification.fadeIn(200);
 
-    setTimeout(function() {
+    setTimeout(function () {
         notification.slideUp(200);
 
-        setTimeout(function() {
+        setTimeout(function () {
             notification.remove();
         }, 250)
     }, length + 200);
 }
 
 let eventListeners = {
-    ["streamer-list-updated"]: function(data) {
+    ["streamer-list-updated"]: function (data) {
         sendNotification("Your streamer list was updated!", "The list of streamers are fresh from Twitch. <a href=\"#\" onclick=\"navigate('authorized-channels', '/you/authorized-channels.html');return false;\">Click here to check them out!</a>");
         emit("streamersChange", [data]);
     }
@@ -35,36 +35,36 @@ let eventListeners = {
 function initWS() {
     ws = new WebSocket(WS_URI);
 
-    ws.json = function(object) {
+    ws.json = function (object) {
         ws.send(JSON.stringify(object));
     }
 
-    ws.request = function(object) {
+    ws.request = function (object) {
         return new Promise((resolve, reject) => {
             object.trace = makeid(8);
             ws.json(object);
 
-            traceList[object.trace] = function(data) {
+            traceList[object.trace] = function (data) {
                 resolve(data);
             }
 
-            setTimeout(function() {
+            setTimeout(function () {
                 delete traceList[object.trace];
                 reject("Request Timeout");
             }, 10000);
         });
     }
 
-    ws.onopen = async function() {
+    ws.onopen = async function () {
         console.log(await ws.request({type: "auth", session: readCookie("session")}));
     }
 
-    ws.onclose = function() {
+    ws.onclose = function () {
         console.log("Websocket Closed. Reconnecting");
         initWS();
     }
 
-    ws.onmessage = function(message) {
+    ws.onmessage = function (message) {
         try {
             let json = JSON.parse(message.data);
 
@@ -84,13 +84,14 @@ function initWS() {
         }
     }
 }
+
 initWS();
 
 function makeid(length) {
     let result = '';
     let characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     let charactersLength = characters.length;
-    for (let i = 0; i < length; i++ ) {
+    for (let i = 0; i < length; i++) {
         result += characters.charAt(Math.floor(Math.random() * charactersLength));
     }
     return result;
@@ -102,13 +103,13 @@ function comma(x) {
 
 const listeners = {
     profileImageChange: [
-        function(avatar) {
+        function (avatar) {
             // update global picture
             $(".profile-picture").attr("src", avatar);
         },
     ],
     twitchAccountsChange: [
-        function(accounts) {
+        function (accounts) {
 
             let table = `<table>`;
 
@@ -133,7 +134,7 @@ const listeners = {
         }
     ],
     discordAccountsChange: [
-        function(accounts) {
+        function (accounts) {
 
             let table = `<table>`;
 
@@ -166,7 +167,7 @@ const listeners = {
         }
     ],
     streamersChange: [
-        function(streamers) {
+        function (streamers) {
             let identities = `<table>`;
             let twitch = `<table>`;
             let discord = `<table>`;
@@ -199,13 +200,13 @@ const listeners = {
 
                 streamer.profiles.discord.forEach(account => {
                     let pfp = null;
-    
+
                     if (account.avatar !== null) {
                         pfp = DISCORD_AVATAR_URI + "avatars/" + account.id + "/" + account.avatar + ".png";
                     } else {
                         pfp = DISCORD_AVATAR_URI + "embed/avatars/" + account.discriminator + ".png";
                     }
-    
+
                     discord += `
                     <tr class="account-row">
                         <td><img class="rounded-square-avatar" src="${pfp}" alt="Profile picture for Discord user '${account.name}'"></td>
@@ -235,7 +236,7 @@ const listeners = {
         }
     ],
     statusChange: [
-        function(status) {
+        function (status) {
             let moduleCode = `<div class="container-fluid"><div class="row">`;
             status.forEach((node, i) => {
                 if (i % 2 === 0 && i !== 0) {
@@ -268,10 +269,10 @@ const listeners = {
 }
 
 function emit(event, params) {
-    if (typeof(params) !== "object") params = [params];
+    if (typeof (params) !== "object") params = [params];
 
     if (listeners[event]) {
-        listeners[event].forEach(function(listener) {
+        listeners[event].forEach(function (listener) {
             listener(...params);
         });
     }
@@ -283,8 +284,7 @@ function createCookie(name, value, days) {
         var date = new Date();
         date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
         var expires = "; expires=" + date.toGMTString();
-    }
-    else var expires = "";               
+    } else var expires = "";
 
     document.cookie = name + "=" + value + expires + "; path=/";
 }
@@ -305,7 +305,7 @@ function eraseCookie(name) {
 }
 
 const api = {
-    get: function(uri, callback) {
+    get: function (uri, callback) {
         $.ajax({
             type: "GET",
             url: API_URI + uri,
@@ -317,7 +317,7 @@ const api = {
     }
 }
 
-const navigate = function(page, url) {
+const navigate = function (page, url) {
     $("body").removeClass("menu-open");
 
     $(".sidebar-nav a").removeClass("active");
@@ -332,8 +332,12 @@ const navigate = function(page, url) {
 
         oldspan.addClass("old");
 
-        setTimeout(function(){newspan.removeClass("new");}, 10);
-        setTimeout(function(){oldspan.remove();}, 250);
+        setTimeout(function () {
+            newspan.removeClass("new");
+        }, 10);
+        setTimeout(function () {
+            oldspan.remove();
+        }, 250);
     }
 
     $("article").hide();
@@ -342,8 +346,8 @@ const navigate = function(page, url) {
     history.pushState({page: page, url: url}, "TMS Admin Panel", url);
 }
 
-$(document).ready(function() {
-    api.get("identity", function(data) {
+$(document).ready(function () {
+    api.get("identity", function (data) {
         if (data.success) {
             emit("twitchAccountsChange", [data.data.profiles.twitch]);
             emit("discordAccountsChange", [data.data.profiles.discord]);
@@ -359,19 +363,19 @@ $(document).ready(function() {
         }
     });
 
-    api.get("streamers", function(data) {
+    api.get("streamers", function (data) {
         if (data.success) {
-            emit("streamersChange",[data.data]);
+            emit("streamersChange", [data.data]);
         }
     });
 
-    api.get("status", function(data) {
+    api.get("status", function (data) {
         if (data.success) {
-            emit("statusChange",[data.data]);
+            emit("statusChange", [data.data]);
         }
     });
 
-    $(".add-twitch-profile").click(function() {
+    $(".add-twitch-profile").click(function () {
         if (confirm('Twitch will not prompt you to change your login account. Go to Twitch and verify this is the account you\'d like to add prior to continuing.\n\nIf your logged in account is the same account that you use to login here, you will just be sent back to this page.')) {
             window.location = "https://tmsqd.co/twitch";
         }
@@ -379,9 +383,9 @@ $(document).ready(function() {
         return false;
     });
 
-    $("a.not-registered").click(function() {
+    $("a.not-registered").click(function () {
         let ele = $(this);
-        
+
         if (ele.attr("data-slink")) {
             navigate(ele.attr("data-slink"), ele.attr("href"));
 
@@ -390,12 +394,20 @@ $(document).ready(function() {
     });
 
     $("a.not-registered").removeClass("not-registered");
-    $("h1").click(function(){$("body").removeClass("menu-open");});
-    $(".hamburger-menu").click(function(){$("body").toggleClass("menu-open");return false;});
+    $("h1").click(function () {
+        $("body").removeClass("menu-open");
+    });
+    $(".hamburger-menu").click(function () {
+        $("body").toggleClass("menu-open");
+        return false;
+    });
 });
 
-window.onpopstate = function(event) {
+window.onpopstate = function (event) {
     if (event.state && event.state.page && event.state.url) {
         navigate(event.state.page, event.state.url);
     }
 };
+
+
+
